@@ -29,7 +29,6 @@ class UsersController {
   }
 
   async create(req, res, next) {
-    console.log("Controlleur create", req.body);
     try {
       const user = await usersService.create(req.body);
       user.password = undefined; 

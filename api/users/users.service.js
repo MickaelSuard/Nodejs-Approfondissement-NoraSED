@@ -5,7 +5,6 @@ class UserService {
   
   getAll() {
     const users = User.find();  
-    console.log("Users:", users);
     return users;
   }
 
@@ -14,13 +13,12 @@ class UserService {
       const userQuery = User.findById(id, "-password"); 
       return userQuery;
     } catch (err) {
-      console.error("Error fetching user by ID:", err);
       throw err;
     }
   }
 
   create(data) {
-    console.log("Service Data:", data);
+
     const user = new User(data);
     return user.save();
   }

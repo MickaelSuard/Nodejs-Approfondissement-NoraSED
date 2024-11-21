@@ -30,7 +30,6 @@ class ArticlesController {
 
   async create(req, res, next) {
     try {
-      console.log("Controlleur create", req.user);
       const articleData = {
         ...req.body,
         user: req.user,
@@ -63,12 +62,9 @@ class ArticlesController {
 
   async delete(req, res, next) {
     try {
-      const id = req.params.id;
-      const result = await articlesService.delete(id);
-      if (!result) {
-        throw new NotFoundError("Article not found");
-      }
-
+       const id = req.params.id;
+      
+      req.io.emit("article:delete", { id }); // Emettre un event temps réel
       res.status(204).send();
     } catch (err) {
       next(err);
@@ -76,7 +72,6 @@ class ArticlesController {
   }
 
  async getArticlesByUserId(req, res, next) {
-    console.log("getArticlesByUserId", req.params.userId);
     try {
       const userId = req.params.userId;
       const articles = await articlesService.getArticlesByUserId(userId);

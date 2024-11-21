@@ -1,97 +1,82 @@
-const request = require('supertest');
-const { app } = require('../server');
-const mongoose = require('mongoose');
-const mockingoose = require('mockingoose');
-const Article = require('../api/articles/articles.schema');
-const jwt = require('jsonwebtoken');
-const config = require('../config');
+const request = require("supertest");
+const mockingoose = require("mockingoose");
+const { app } = require("../server");
+const Article = require("../api/articles/articles.schema");
+const jwt = require("jsonwebtoken");
+const config = require("../config/index");
 
-async function connectDB() {
-  try {
-    await mongoose.connect('mongodb://localhost:27017/test', { useNewUrlParser: true, useUnifiedTopology: true });
-  } catch (err) {
-    console.error('MongoDB connection error:', err);
-  }
-}
 
-connectDB();
+describe("Routes Articles", () => {
 
-describe('API /articles', () => {
-    const USER = { userId: "60d5f4ee2f8fb814c8b4b484", role: "admin" }
-    beforeEach(() => {
-        mockingoose.resetAll();
+
+
+
+    // User all perm
+    const USER = {
+        user: { id: "60d5f4ee2f8fb814c8b4b484", role: "admin" }
+    }
+    let token;
+
+
+    const MOCK_ARTICLE_POST_RETURN = {
+        _id: "60d5f4ee2f8fb814c8b4b485",
+        title: "Test Article",
+        content: "Contenu test article",
+        user: "60d5f4ee2f8fb814c8b4b484",
+        state: "draft"
+    };
+
+    const MOCK_ARTICLE_POST = {
+        title: "Test Article",
+        content: "Contenu test article",
+        state: "draft"
+    };
+
+    const MOCK_ARTICLE_PUT = {
+        title: "Article Modifié",
+        content: "Contenu modifié test article",
+        state: "published"
+    }
+    const MOCK_ARTICLE_PUT_RETURN = {
+        _id: "60d5f4ee2f8fb814c8b4b485",
+        title: "Article Modifié",
+        content: "Contenu modifié test article",
+        state: "published"
+    }
+
+    beforeAll(() => {
+        mockingoose(Article).toReturn(MOCK_ARTICLE_POST_RETURN, "save");
+        mockingoose(Article).toReturn(MOCK_ARTICLE_PUT_RETURN, "findOneAndUpdate");
     });
 
-    it('should create a new article', async () => {
-        const mockArticle = {
-            _id: mongoose.Types.ObjectId(),
-            title: 'Test Article',
-            content: 'This is a test article.',
-            user: '672a0178fb49b921d55e4e96',
-        };
-
-        mockingoose(Article).toReturn(mockArticle, 'save');
-
-        console.log('Sending request to create article:', mockArticle);
-        const token = jwt.sign(USER, config.secretJwtToken);
-        console.log('Token:', token);
-        const response = await request(app)
-            .post('/api/articles')
-            .send(mockArticle)
-            .set('x-access-token', token);
-
-        console.log('create article status:', response.status);
-        console.log('create article body:', response.body);
-
-        expect(response.status).toBe(201);
-        expect(response.body.title).toBe(mockArticle.title);
-        expect(response.body.content).toBe(mockArticle.content);
-    });
-
-    // it('should update an existing article', async () => {
-    //     const mockArticle = {
-    //         _id: '672cca976df9cb188f4df9ef',
-    //         title: 'Updated Article',
-    //         content: 'This is an updated test article.',
-    //         user: '672a0178fb49b921d55e4e96'
-    //     };
-
-    //     mockingoose(Article).toReturn(mockArticle, 'findOneAndUpdate');
-    //     const token = jwt.sign(USER, config.secretJwtToken);
-
-    //     console.log('Sending request to update article:', mockArticle);
-    //     console.log('Token:', token);
-    //     const response = await request(app)
-    //         .put(`/api/articles/${mockArticle._id}`)
-    //         .set('x-access-token', token)
-    //         .send(mockArticle);
-
-    //     console.log('update article status:', response.status);
-    //     console.log('update article body:', response.body);
-
-    //     expect(response.status).toBe(200);
-    //     expect(response.body.title).toBe(mockArticle.title);
-    //     expect(response.body.content).toBe(mockArticle.content);
-    // });
-
-    // it('should delete an article', async () => {
-    //     const mockArticle = {
-    //         _id: '672cca976df9cb188f4df9ef',
-    //     };
-
-    //     mockingoose(Article).toReturn(mockArticle, 'findOneAndDelete');
-
-    //     console.log('Sending request to delete article:', mockArticle._id);
+    test("[Articles] POST", async () => {
+        token = jwt.sign(USER, config.secretJwtToken);
+        const res = await request(app)
+            .post("/api/articles")
+            .set("x-access-token", token)
+            .send(MOCK_ARTICLE_POST);
+                expect(res.status).toBe(201);
+                expect(res.body.title).toBe(MOCK_ARTICLE_POST_RETURN.title); 
         
-    //     const token = jwt.sign(USER, config.secretJwtToken);
-    //     console.log('Token:', token);
-    //     const response = await request(app)
-    //         .delete(`/api/articles/${mockArticle._id}`)
-    //         .set('x-access-token', token)
-    //         .send(mockArticle);
+    });
 
-    //     console.log('delete article status:', response.status);
+    test("[Articles] PUT", async () => {
+        token = jwt.sign(USER, config.secretJwtToken);
+        const res = await request(app)
+            .put("/api/articles/60d5f4ee2f8fb814c8b4b485")
+            .set("x-access-token", token)
+            .send(MOCK_ARTICLE_PUT);
+                expect(res.status).toBe(200);
+                expect(res.body.title).toBe(MOCK_ARTICLE_PUT_RETURN.title);
+    });
 
-    //     expect(response.status).toBe(204);
-    // });
+    test("[Articles] DELETE", async () => {
+        token = jwt.sign(USER, config.secretJwtToken);
+        const res = await request(app)
+            .delete("/api/articles/60d5f4ee2f8fb814c8b4b485")
+            .set("x-access-token", token)
+            .send();
+             expect(res.status).toBe(204);
+    })
+
 });
